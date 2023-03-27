@@ -1,0 +1,24 @@
+# This pipeline is meant to be run via the Buildkite API, and is
+# only used for beta builds
+
+# Nodes with values to reuse in the pipeline.
+common_params:
+  # Common plugin settings to use with the `plugins` key.
+  - &common_plugins
+    - automattic/a8c-ci-toolkit#2.15.0
+
+steps:
+  - block: "Start Code Freeze"
+    prompt: "Ready to cut the release branch from trunk?"
+
+  - command: |
+      bundle exec fastlane code_freeze_in_ci
+
+  - block: "Complete Code Freeze"
+    prompt: |
+      Be sure to verify that you have updated the libraries to a stable versions
+      and that you've updated the Editorialized Release Notes
+      (if they're available already) before continuing
+
+  - command: |
+      echo "This is where we'll complete the code freeze"

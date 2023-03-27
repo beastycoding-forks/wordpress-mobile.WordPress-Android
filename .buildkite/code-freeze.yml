@@ -12,6 +12,7 @@ steps:
     prompt: "Ready to cut the release branch from trunk?"
 
   - command: |
+      bundle install
       bundle exec fastlane code_freeze_in_ci
 
   - block: "Complete Code Freeze"

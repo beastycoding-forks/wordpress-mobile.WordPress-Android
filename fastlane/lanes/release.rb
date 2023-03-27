@@ -1,4 +1,18 @@
 platform :android do
+  lane :start_code_freeze_in_ci do |options|
+    buildkite_trigger_build(
+      buildkite_organization: 'automattic',
+      buildkite_pipeline: 'wordpress-android',
+      branch: 'add/code-freeze-in-buildkite',
+      pipeline_file: 'code-freeze.yml',
+      message: 'Code Freeze in CI'
+    )
+  end
+
+  lane :code_freeze_in_ci do |options|
+    UI.message("This is where we'll handle the code freeze")
+  end
+
   #####################################################################################
   # code_freeze
   # -----------------------------------------------------------------------------------

@@ -23,3 +23,9 @@ steps:
 
   - command: |
       echo "This is where we'll complete the code freeze"
+      # Testing if we are able to create a new branch and push to remote
+      git checkout -b testing/push-from-buildkite
+      touch some-test-file
+      git add some-test-file
+      git commit -m "Testing if we are able to push to remote from Buildkite"
+      git push -u origin testing/push-from-buildkite

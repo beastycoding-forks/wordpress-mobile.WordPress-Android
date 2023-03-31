@@ -24,6 +24,8 @@ steps:
   - command: |
       echo "This is where we'll complete the code freeze"
       # Testing if we are able to create a new branch and push to remote
+      git config --global user.email "mobile@automattic.com"
+      git config --global user.name "Buildkite"
       git checkout -b testing/push-from-buildkite
       touch some-test-file
       git add some-test-file

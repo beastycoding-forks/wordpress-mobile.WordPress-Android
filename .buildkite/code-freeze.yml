@@ -23,6 +23,7 @@ steps:
 
   - command: |
       echo "This is where we'll complete the code freeze"
+      curl -L https://api.github.com/meta | jq -r '.ssh_keys | .[]' | sed -e 's/^/github.com /' >> ~/.ssh/known_hosts
       git remote set-url origin git@github.com:wordpress-mobile/WordPress-Android.git
       # Testing if we are able to create a new branch and push to remote
       git config --global user.email "mobile@automattic.com"

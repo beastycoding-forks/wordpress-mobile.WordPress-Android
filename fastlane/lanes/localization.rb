@@ -209,7 +209,8 @@ platform :android do
         project_url: app_values[:glotpress_metadata_project],
         target_files: files,
         locales: locales,
-        download_path: download_path
+        download_path: download_path,
+        auto_retry: true
       )
 
       # Copy the source `.txt` files (used as source of truth when we generated the `.po`) to the `fastlane/*metadata/android/en-US` dir,

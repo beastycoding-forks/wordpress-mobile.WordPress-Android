@@ -2,19 +2,21 @@ package org.wordpress.android.ui.blaze.blazecampaigns.campaignlisting
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
 import org.wordpress.android.R
-import org.wordpress.android.fluxc.model.blaze.BlazeCampaignModel
 import org.wordpress.android.fluxc.store.blaze.BlazeCampaignsStore
 import org.wordpress.android.modules.BG_THREAD
 import org.wordpress.android.ui.blaze.BlazeFeatureUtils
 import org.wordpress.android.ui.blaze.BlazeFlowSource
 import org.wordpress.android.ui.blaze.blazecampaigns.campaigndetail.CampaignDetailPageSource
 import org.wordpress.android.ui.mysite.SelectedSiteRepository
-import org.wordpress.android.ui.mysite.cards.blaze.CampaignStatus
-import org.wordpress.android.ui.stats.refresh.utils.ONE_THOUSAND
-import org.wordpress.android.ui.stats.refresh.utils.StatsUtils
 import org.wordpress.android.ui.utils.UiString
 import org.wordpress.android.util.NetworkUtilsWrapper
 import org.wordpress.android.viewmodel.Event
@@ -29,7 +31,7 @@ class CampaignListingViewModel @Inject constructor(
     @param:Named(BG_THREAD) private val bgDispatcher: CoroutineDispatcher,
     private val blazeFeatureUtils: BlazeFeatureUtils,
     private val blazeCampaignsStore: BlazeCampaignsStore,
-    private val statsUtils: StatsUtils,
+    private val campaignDomainMapper: CampaignDomainMapper,
     private val selectedSiteRepository: SelectedSiteRepository,
     private val networkUtilsWrapper: NetworkUtilsWrapper
 ) : ScopedViewModel(bgDispatcher) {
@@ -42,51 +44,18 @@ class CampaignListingViewModel @Inject constructor(
     fun start(campaignListingPageSource: CampaignListingPageSource) {
         blazeFeatureUtils.trackCampaignListingPageShown(campaignListingPageSource)
         _uiState.postValue(CampaignListingUiState.Loading)
-        loadCampaigns()
     }
 
-    private fun loadCampaigns() {
-        if (!networkUtilsWrapper.isNetworkAvailable()) {
-            // showNoInternet() error, skipping for now so that loading state can be design reviewed
-            return
-        }
-        launch {
-            val blazeCampaignModel = blazeCampaignsStore.getBlazeCampaigns(selectedSiteRepository.getSelectedSite()!!)
-            if (blazeCampaignModel.campaigns.isEmpty()) {
-                showNoCampaigns()
-            } else {
-                val campaigns = blazeCampaignModel.campaigns.map {
-                    it.mapToCampaignModel()
-                }
-                showCampaigns(campaigns)
-            }
-        }
-    }
-
-    private fun BlazeCampaignModel.mapToCampaignModel(): CampaignModel {
-        return CampaignModel(
-            id = this.campaignId.toString(),
-            title = UiString.UiStringText(title),
-            status = CampaignStatus.fromString(uiStatus),
-            featureImageUrl = imageUrl,
-            impressions = mapToStatsStringIfNeeded(impressions),
-            clicks = mapToStatsStringIfNeeded(clicks),
-            budget = convertToDollars(budgetCents)
-        )
-    }
-
-    private fun mapToStatsStringIfNeeded(value: Long): UiString? {
-        return if (value != 0L) {
-            val formattedString = statsUtils.toFormattedString(value, ONE_THOUSAND)
-            UiString.UiStringText(formattedString)
-        } else {
-            null
-        }
-    }
-
-    private fun convertToDollars(budgetCents: Long): UiString {
-        return UiString.UiStringText("$" + (budgetCents / CENTS_IN_DOLLARS).toString())
-    }
+    val campaigns: Flow<PagingData<CampaignModel>> = Pager(
+        pagingSourceFactory = {
+            CampaignPagingSource(
+                blazeCampaignsStore,
+                selectedSiteRepository,
+                campaignDomainMapper
+            )
+        },
+        config = PagingConfig(pageSize = 10)
+    ).flow.cachedIn(viewModelScope)
 
     private fun showCampaigns(campaigns: List<CampaignModel>) {
         _uiState.postValue(

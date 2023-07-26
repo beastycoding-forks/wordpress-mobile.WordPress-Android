@@ -1,5 +1,6 @@
 package org.wordpress.android.ui.blaze.blazecampaigns.campaignlisting
 
+import org.wordpress.android.R
 import org.wordpress.android.ui.mysite.cards.blaze.CampaignStatus
 import org.wordpress.android.ui.utils.UiString
 
@@ -15,6 +16,17 @@ sealed class CampaignListingUiState {
             val text: UiString,
             val click: () -> Unit
         )
+
+        companion object {
+            val noCampaign = Error(
+                title = UiString.UiStringRes(R.string.campaign_listing_page_no_campaigns_message_title),
+                description = UiString.UiStringRes(R.string.campaign_listing_page_no_campaigns_message_description),
+                button = CampaignListingUiState.Error.ErrorButton(
+                    text = UiString.UiStringRes(R.string.campaign_listing_page_no_campaigns_button_text),
+                    click = { }
+                )
+            )
+        }
     }
 
     data class Success(

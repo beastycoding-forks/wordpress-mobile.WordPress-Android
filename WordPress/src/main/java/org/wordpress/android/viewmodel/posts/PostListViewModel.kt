@@ -8,7 +8,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagedList
+import androidx.paging.PagingData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -53,7 +53,7 @@ import javax.inject.Inject
 import javax.inject.Named
 import kotlin.properties.Delegates
 
-typealias PagedPostList = PagedList<PostListItemType>
+typealias PagedPostList = PagingData<PostListItemType>
 
 private const val SEARCH_DELAY_MS = 500L
 private const val SEARCH_PROGRESS_INDICATOR_DELAY_MS = 500L
@@ -337,7 +337,7 @@ class PostListViewModel @Inject constructor(
         pagedListWrapper?.fetchFirstPage()
     }
 
-    private fun onDataUpdated(data: PagedPostList) {
+    private fun onDataUpdated(data: PagingData<PostListItemType>) {
         val localPostId = scrollToLocalPostId
         if (localPostId != null) {
             scrollToLocalPostId = null

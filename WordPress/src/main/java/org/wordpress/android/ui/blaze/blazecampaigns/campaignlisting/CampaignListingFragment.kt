@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
@@ -23,8 +21,6 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
@@ -35,6 +31,10 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.items
 import dagger.hilt.android.AndroidEntryPoint
 import org.wordpress.android.R
 import org.wordpress.android.ui.ActivityNavigator
@@ -75,8 +75,8 @@ class CampaignListingFragment : Fragment() {
     ): View = ComposeView(requireContext()).apply {
         setContent {
             AppTheme {
-                val campaigns by viewModel.uiState.observeAsState()
-                CampaignListingPage(campaigns ?: CampaignListingUiState.Loading)
+                val campaigns = viewModel.campaigns.collectAsLazyPagingItems()
+                CampaignListingPage(campaigns)
             }
         }
     }
@@ -115,7 +115,7 @@ class CampaignListingFragment : Fragment() {
 
     @Composable
     @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
-    fun CampaignListingPage(uiState: CampaignListingUiState) {
+    fun CampaignListingPage(uiState: LazyPagingItems<CampaignModel>) {
         Scaffold(
             topBar = {
                 MainTopAppBar(
@@ -127,9 +127,9 @@ class CampaignListingFragment : Fragment() {
                 )
             },
             floatingActionButton = {
-                if (uiState is CampaignListingUiState.Success) {
+                if (uiState.itemCount > 0) {
                     CreateCampaignFloatingActionButton(
-                        onClick = uiState.createCampaignClick
+                        onClick = {}
                     )
                 }
             },
@@ -138,29 +138,27 @@ class CampaignListingFragment : Fragment() {
 
     @Composable
     fun CampaignListingContent(
-        uiState: CampaignListingUiState
+        uiState: LazyPagingItems<CampaignModel>
     ) {
-        when (uiState) {
-            is CampaignListingUiState.Loading -> LoadingState()
-            is CampaignListingUiState.Error -> CampaignListingError(uiState)
-            is CampaignListingUiState.Success -> CampaignListingSuccess(uiState)
+        val state = uiState.loadState.append
+        when (state) {
+            is LoadState.Loading -> LoadingState()
+            is LoadState.Error -> CampaignListingError(CampaignListingUiState.Error.noCampaign)
+            is LoadState.NotLoading -> CampaignListingSuccess(uiState)
         }
     }
 
     @Composable
-    fun CampaignListingSuccess(uiState: CampaignListingUiState.Success) {
+    fun CampaignListingSuccess(campaigns: LazyPagingItems<CampaignModel>) {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(bottom = 72.dp),
         ) {
-            items(uiState.campaigns) { campaign ->
-                CampaignListRow(
-                    campaignModel = campaign,
-                    modifier = Modifier.clickable { uiState.itemClick(campaign) })
-            }
-            if (uiState.loadingMore) {
-                item {
-                    LoadingState(modifier = Modifier.padding(top = 16.dp))
+            items(items = campaigns) { campaign ->
+                campaign?.let {
+                    CampaignListRow(
+                        campaignModel = campaign,
+                    )
                 }
             }
         }
